@@ -5,6 +5,8 @@ import { HomePage } from './pages/HomePage';
 import { ProjectPage } from './pages/ProjectPage';
 import { FormBuilder } from './components/FormBuilder';
 import { LoginPage } from './pages/LoginPage';
+import { TeamsPage } from './pages/TeamsPage';
+import { AccountSettingsPage } from './pages/AccountSettingsPage';
 import { PrivateRoute } from './components/PrivateRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -31,6 +33,8 @@ function App() {
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/project/:projectId" element={<ProjectPage />} />
                     <Route path="/form/:formId" element={<FormBuilder />} />
+                    <Route path="/teams" element={<TeamsPage />} />
+                    <Route path="/settings" element={<AccountSettingsPage />} />
                   </Routes>
                 </div>
               </div>

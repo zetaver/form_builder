@@ -112,8 +112,13 @@ export const Toolbox: React.FC = () => {
       id: '',
       type: 'radio',
       label: 'Radio',
-      options: ['Option 1', 'Option 2', 'Option 3'],
+      options: [{ label: 'Option 1', value: '1' }],
       required: false,
+      data: {
+        sourceType: 'values',
+        clearWhenHidden: false,
+        customDefaultValue: false
+      }
     },
   ];
 
@@ -286,20 +291,6 @@ export const Toolbox: React.FC = () => {
               elements={filterElements(dataElements)}
               getIcon={getIcon}
             />
-
-            <div className="border-b border-gray-200">
-              <button className="w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between">
-                <span className="font-medium text-gray-900">Premium</span>
-                <ChevronRight className="h-4 w-4 text-gray-500" />
-              </button>
-            </div>
-
-            <div className="border-b border-gray-200">
-              <button className="w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors flex items-center justify-between">
-                <span className="font-medium text-gray-900">Existing Resource Fields</span>
-                <ChevronRight className="h-4 w-4 text-gray-500" />
-              </button>
-            </div>
           </div>
         </div>
       </SidebarBody>

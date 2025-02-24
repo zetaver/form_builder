@@ -1,32 +1,49 @@
 import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import routes from './routes/index.js';
+import * as authController from './controllers/auth.js';
+import * as projectController from './controllers/projects.js';
+import * as formController from './controllers/forms.js';
+import * as apiKeyController from './controllers/apiKeys.js';
+import { protect } from './middleware/auth.js';
+import userRoutes from './routes/users';
 
-dotenv.config();
+const router = express.Router();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+// Auth routes
+router.post('/auth/register', authController.register);
+router.post('/auth/login', authController.login);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Project routes
+router.use('/projects', protect);
+router.route('/projects')
+  .get(projectController.getProjects)
+  .post(projectController.createProject);
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+router.route('/projects/:id')
+  .get(projectController.getProject)
+  .put(projectController.updateProject)
+  .delete(projectController.deleteProject);
 
-// Routes
-app.use('/api', routes);
+// Form routes
+router.use('/forms', protect);
+router.post('/forms', formController.createForm);
+router.get('/projects/:projectId/forms', formController.getForms);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
+router.route('/forms/:id')
+  .get(formController.getForm)
+  .put(formController.updateForm)
+  .delete(formController.deleteForm);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// API Key routes
+router.use('/api-keys', protect);
+router.post('/api-keys', apiKeyController.createApiKey);
+router.get('/projects/:projectId/api-keys', apiKeyController.getProjectApiKeys);
+router.route('/api-keys/:id')
+  .put(apiKeyController.updateApiKey)
+  .delete(apiKeyController.deleteApiKey);
+
+// Public form submission endpoint
+router.post('/submit/:endpoint', formController.submitForm);
+
+router.use('/users', userRoutes);
+
+export default router;

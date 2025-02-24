@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { AuthUser, LoginCredentials } from '../types/auth';
+import api from '../config/api';
 
 interface AuthStore {
   user: AuthUser | null;
@@ -7,51 +8,35 @@ interface AuthStore {
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   checkAuth: () => void;
+  updateProfile: (data: { name: string; email: string }) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
-
-// Test credentials
-const TEST_CREDENTIALS = {
-  email: 'admin@example.com',
-  password: 'admin123',
-};
-
-// Test user data
-const TEST_USER: AuthUser = {
-  id: '1',
-  email: TEST_CREDENTIALS.email,
-  name: 'Admin User',
-  role: 'admin',
-};
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   isAuthenticated: false,
 
   login: async (credentials) => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const response = await api.post('/auth/login', credentials);
+      const { token, user } = response.data;
 
-    if (
-      credentials.email === TEST_CREDENTIALS.email &&
-      credentials.password === TEST_CREDENTIALS.password
-    ) {
-      // Store auth data in localStorage
-      localStorage.setItem('auth_user', JSON.stringify(TEST_USER));
-      localStorage.setItem('auth_token', 'test_token');
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('auth_user', JSON.stringify(user));
 
-      set({ user: TEST_USER, isAuthenticated: true });
+      set({ user, isAuthenticated: true });
       return { success: true };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Invalid email or password',
+      };
     }
-
-    return {
-      success: false,
-      error: 'Invalid email or password',
-    };
   },
 
   logout: () => {
-    localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     set({ user: null, isAuthenticated: false });
   },
 
@@ -64,6 +49,29 @@ export const useAuthStore = create<AuthStore>((set) => ({
         user: JSON.parse(storedUser),
         isAuthenticated: true,
       });
+    }
+  },
+
+  updateProfile: async (data) => {
+    try {
+      const response = await api.put('/users/profile', data);
+      const updatedUser = response.data;
+
+      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      set({ user: updatedUser });
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  updatePassword: async (currentPassword, newPassword) => {
+    try {
+      await api.put('/users/password', {
+        currentPassword,
+        newPassword,
+      });
+    } catch (error: any) {
+      throw error;
     }
   },
 }));

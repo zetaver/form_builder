@@ -8,7 +8,7 @@ const signToken = (id) => {
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password,role } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -18,7 +18,8 @@ export const register = async (req, res) => {
     const user = await User.create({
       name,
       email,
-      password
+      password,
+      role
     });
 
     const token = signToken(user._id);

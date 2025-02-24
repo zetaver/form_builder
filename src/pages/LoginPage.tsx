@@ -16,13 +16,16 @@ export const LoginPage = () => {
     setError('');
     setIsLoading(true);
 
-    const result = await login({ email, password });
-    
-    if (!result.success) {
-      setError(result.error || 'An error occurred');
+    try {
+      const result = await login({ email, password });
+      if (!result.success) {
+        setError(result.error || 'An error occurred');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'An error occurred');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   if (isAuthenticated) {
@@ -39,7 +42,7 @@ export const LoginPage = () => {
           Sign in to ZetaForms
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Test credentials: admin@example.com / admin123
+          Use your email and password to sign in
         </p>
       </div>
 

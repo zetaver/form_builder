@@ -1,9 +1,9 @@
 import express from 'express';
-import * as authController from '../controllers/auth.js';
+import * as authController from '../controllers/auth';
 import * as projectController from '../controllers/projects.js';
 import * as formController from '../controllers/forms.js';
 import { protect } from '../middleware/auth.js';
-
+import userRoutes from './users.js';
 const router = express.Router();
 
 // Auth routes
@@ -25,6 +25,9 @@ router.route('/projects/:id')
 router.use('/forms', protect);
 router.post('/forms', formController.createForm);
 router.get('/projects/:projectId/forms', formController.getForms);
+
+
+router.use('/users', userRoutes);
 
 router.route('/forms/:id')
   .get(formController.getForm)

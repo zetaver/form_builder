@@ -1,20 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useFormStore } from '../store/formStore';
 import { FormElement } from '../types/form';
 import { Toolbox } from './Toolbox';
 import { PropertiesPanel } from './PropertiesPanel';
-import { HelpCircle, X, ChevronLeft, Book, FileText, Lock, FileStack, ChevronDown } from 'lucide-react';
+import { HelpCircle, X, ChevronLeft, Book, FileText, Lock, FileStack, ChevronDown, AlertCircle } from 'lucide-react';
 import { DroppableArea } from './DroppableArea';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ProfileMenu } from './ProfileMenu';
 
 export const FormBuilder: React.FC = () => {
   const navigate = useNavigate();
-  const { currentForm, reorderElements, saveForm, addElement, updateForm, currentProject } = useFormStore();
+  const { formId } = useParams();
+  const { 
+    currentForm, 
+    reorderElements, 
+    createForm, 
+    updateForm, 
+    currentProject, 
+    addElement,
+    fetchForm,
+    saveForm,
+    isLoading,
+    error: storeError
+  } = useFormStore();
   const [activeElement, setActiveElement] = useState<FormElement | null>(null);
   const [selectedElement, setSelectedElement] = useState<FormElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const loadForm = async () => {
+      if (formId) {
+        try {
+          await fetchForm(formId);
+        } catch (err: any) {
+          setError(err.response?.data?.message || 'Failed to load form');
+        }
+      }
+    };
+    loadForm();
+  }, [formId, fetchForm]);
 
   const handleDragStart = (event: DragStartEvent) => {
     if (event.active.data.current) {
@@ -47,29 +74,63 @@ export const FormBuilder: React.FC = () => {
 
   const handleCancel = () => {
     if (currentProject) {
-      navigate(`/project/${currentProject.id}`);
+      navigate(`/project/${currentProject._id}`);
     } else {
       navigate('/home');
     }
   };
 
-  const handleCreateForm = () => {
-    if (currentForm) {
-      saveForm();
+  const handleSaveForm = async () => {
+    if (!currentForm) return;
+
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      if (formId) {
+        // Update existing form
+        await saveForm(formId, {
+          title: currentForm.title,
+          name: currentForm.name,
+          description: currentForm.description,
+          elements: currentForm.elements
+        });
+      } else {
+        // Create new form
+        await createForm({
+          title: currentForm.title,
+          name: currentForm.name,
+          description: currentForm.description,
+          elements: currentForm.elements
+        });
+      }
+
       if (currentProject) {
-        navigate(`/project/${currentProject.id}`);
+        navigate(`/project/${currentProject._id}`);
       } else {
         navigate('/home');
       }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to save form');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const getApiEndpoint = (title: string) => {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric characters with hyphens
-      .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">Loading form...</p>
+      </div>
+    );
+  }
 
   if (!currentForm) return null;
 
@@ -132,6 +193,13 @@ export const FormBuilder: React.FC = () => {
 
           {/* Form Header Fields */}
           <div className="grid grid-cols-1 gap-6 p-6">
+            {(error || storeError) && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center gap-2 text-red-700">
+                <AlertCircle size={20} />
+                <span>{error || storeError}</span>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 API Path <span className="text-red-500">*</span>
@@ -210,14 +278,16 @@ export const FormBuilder: React.FC = () => {
           <button
             onClick={handleCancel}
             className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+            disabled={isSaving}
           >
             Cancel
           </button>
           <button
-            onClick={handleCreateForm}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            onClick={handleSaveForm}
+            disabled={isSaving || !currentForm.title || !currentForm.name}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Form
+            {isSaving ? 'Saving Form...' : formId ? 'Save Changes' : 'Create Form'}
           </button>
         </div>
 
